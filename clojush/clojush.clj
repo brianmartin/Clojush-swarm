@@ -1549,13 +1549,11 @@ subprogram of parent2."
                                                                                           mutation-probability mutation-max-points crossover-probability 
                                                                                           simplification-probability tournament-size reproduction-simplifications 
                                                                                           trivial-geography-radius))))]
-                        (while (not (every? true? (for [k breedings] (k :complete?)))) (do (Thread/sleep 1000) (println "waiting"))) ;; SYNCHRONIZE
-                        (println ((nth breedings 1) :value))
+                        (while (not (every? true? (for [k breedings] (k :complete?)))) (do (Thread/sleep 50) (println "waiting"))) ;; SYNCHRONIZE
                         (printf "\nInstalling next generation...") (flush)
                         (dotimes [i population-size]
                           (send (nth pop-agents i) (fn [agt] ((nth breedings i) :value)))))
                       (apply await pop-agents) ;; SYNCHRONIZE
-                      (println (@(nth pop-agents 1) :program))
                       (recur (inc generation)))))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

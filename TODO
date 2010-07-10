@@ -1,0 +1,5 @@
+-Move error-function back outside clojush.clj
+-Adding instructions via :atom-generators is broken, fix
+-Sevak-errors, fix
+-Batch breeds to reduce network lag
+-Remove sevak request output from being printed to stdout

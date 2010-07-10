@@ -1533,12 +1533,9 @@ subprogram of parent2."
 		(when print-ancestors-of-solution
 		  (printf "\nAncestors of solution:\n")
 		  (println (:ancestors best)))
-					;(shutdown-atoms)
 		(auto-simplify best final-report-simplifications true 500))
 	    (do (if (>= generation max-generations)
-		  (do (printf "\nFAILURE\n")
-					;(shutdown-atoms)
-		      )
+		  (do (printf "\nFAILURE\n"))
 		  (do (printf "\nProducing offspring...") (flush)
 		      (let [pop (vec (doall (map deref pop-atoms)))
                             breedings (vec (doall (for [i (range population-size)] (breed (nth pop i) i pop

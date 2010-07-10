@@ -6,7 +6,18 @@ to enable parallelization and scalability.  This is done using Amit Rathore's Sw
 
 REQUIREMENTS
 
-A running Rabbitmq server with the STOMP adaptor.
-Optionally a MySQL databse for log aggregation.
+-A running Rabbitmq server with the STOMP adaptor.
+
+    Rabbitmq default user is 'guest' with pass 'guest'.
+    STOMP will default to 127.0.0.1.  For remote access see:
+    http://hg.rabbitmq.com/rabbitmq-stomp/file/default/README
+
+-Optionally a MySQL database for log aggregation.
 
 QUICKSTART
+
+Update fields relevant to rabbitmq in swarmiji/config/config.clj.
+
+To boot a server: ./clojush-swarm clojush/clojush.clj
+To boot a server and perform a run: ./clojush-swarm clojush/examples/odd.clj
+

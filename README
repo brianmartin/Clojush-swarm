@@ -1,0 +1,9 @@
+README
+
+A modification of Lee Spector's (lspector@hampshire.edu) clojush.clj (see README-CLOJUSH)
+to enable parallelization and scalability.  This is done using Amit Rathore's Swarmiji
+(http://github.com/amitrathore/swarmiji).
+
+REQUIREMENTS
+
+A running Rabbitmq server with the STOMP adaptor.

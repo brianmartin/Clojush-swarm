@@ -1,0 +1,19 @@
+#!/bin/sh
+
+export SWARMIJI_HOME="/home/brian/src/clojush-swarm/swarmiji"
+export SWARMIJI_ENV="development"
+CLOJUSH_HOME="/home/brian/src/clojush-swarm"
+
+echo "CLOJUSH_HOME is $CLOJUSH_HOME"
+echo "SWARMIJI_HOME is ${SWARMIJI_HOME}"
+
+cp=".:$CLOJUSH_HOME:${SWARMIJI_HOME}/src:${SWARMIJI_HOME}/lib/clojure/clj-utils/src"
+
+for f in ${SWARMIJI_HOME}/lib/java/*.jar
+do 
+    cp=$cp:$f
+done
+
+echo $cp
+
+exec java -Xms256m -Xmx512m -cp ${cp} clojure.main $*

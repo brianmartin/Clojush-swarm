@@ -2,14 +2,14 @@
 
 export SWARMIJI_HOME="/home/brian/src/clojush-swarm/swarmiji"
 export SWARMIJI_ENV="development"
-CLOJUSH_HOME="/home/brian/src/clojush-swarm"
+CLOJUSH_HOME="/home/brian/src/clojush-swarm/clojush"
 
 echo "CLOJUSH_HOME is $CLOJUSH_HOME"
 echo "SWARMIJI_HOME is ${SWARMIJI_HOME}"
 
-cp=".:$CLOJUSH_HOME:${SWARMIJI_HOME}/src:${SWARMIJI_HOME}/lib/clojure/clj-utils/src"
+cp=".:$CLOJUSH_HOME:${SWARMIJI_HOME}/src"
 
-for f in ${SWARMIJI_HOME}/lib/java/*.jar
+for f in ${SWARMIJI_HOME}/jars/*.jar
 do 
     cp=$cp:$f
 done

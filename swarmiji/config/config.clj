@@ -5,8 +5,8 @@
       :port 61613
       :q-username "guest"
       :q-password "guest"
-      :sevak-request-queue-prefix "RUNA_SWARMIJI_TRANSPORT_"
-      :sevak-diagnostics-queue-prefix "RUNA_SWARMIJI_DIAGNOSTICS_"    
+      :sevak-request-queue-prefix "clojush_"
+      :sevak-diagnostics-queue-prefix "clojush_diagnostics_"    
       :distributed-mode true
       :diagnostics-mode false
       :logsdir (str swarmiji-home "/logs")

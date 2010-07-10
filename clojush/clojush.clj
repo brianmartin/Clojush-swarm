@@ -1517,18 +1517,15 @@ subprogram of parent2."
 		     simplification-probability tournament-size report-simplifications
 		     final-report-simplifications trivial-geography-radius))
     (printf "\nGenerating initial population...\n") (flush)
-    (let [pop-agents (vec (doall (for [_ (range population-size)] 
-				   (agent (struct-map individual 
-					    :program (random-code max-points atom-generators))))))
-	  child-agents (vec (doall (for [_ (range population-size)] 
-				     (agent (struct-map individual)))))]
+    (let [pop-atoms (vec (doall (for [_ (range population-size)] 
+				   (atom (struct-map individual 
+					    :program (random-code max-points atom-generators))))))]
       (loop [generation 0]
 	(printf "\n\n-----\nProcessing generation: %s\nComputing errors..." generation) (flush)
-	(dorun (map #(send % evaluate-individual) pop-agents))
-	(apply await pop-agents) ;; SYNCHRONIZE
+	(dorun (map #(swap! % evaluate-individual) pop-atoms))
 	(printf "\nDone computing errors.") (flush)
 	;; report and check for success
-	(let [best (report (vec (doall (map deref pop-agents))) generation report-simplifications)]
+	(let [best (report (vec (doall (map deref pop-atoms))) generation report-simplifications)]
 	  (if (<= (:total-error best) error-threshold)
 	    (do (printf "\n\nSUCCESS at generation %s\nSuccessful program: %s\nErrors: %s\nTotal error: %s\nHistory: %s\nSize: %s\n\n"
 			generation (not-lazy (:program best)) (not-lazy (:errors best)) (:total-error best) 
@@ -1536,14 +1533,14 @@ subprogram of parent2."
 		(when print-ancestors-of-solution
 		  (printf "\nAncestors of solution:\n")
 		  (println (:ancestors best)))
-					;(shutdown-agents)
+					;(shutdown-atoms)
 		(auto-simplify best final-report-simplifications true 500))
 	    (do (if (>= generation max-generations)
 		  (do (printf "\nFAILURE\n")
-					;(shutdown-agents)
+					;(shutdown-atoms)
 		      )
 		  (do (printf "\nProducing offspring...") (flush)
-		      (let [pop (vec (doall (map deref pop-agents)))
+		      (let [pop (vec (doall (map deref pop-atoms)))
                             breedings (vec (doall (for [i (range population-size)] (breed (nth pop i) i pop
                                                                                           population-size max-points atom-generators 
                                                                                           mutation-probability mutation-max-points crossover-probability 
@@ -1552,8 +1549,7 @@ subprogram of parent2."
                         (while (not (every? true? (for [k breedings] (k :complete?)))) (do (Thread/sleep 50) (println "waiting"))) ;; SYNCHRONIZE
                         (printf "\nInstalling next generation...") (flush)
                         (dotimes [i population-size]
-                          (send (nth pop-agents i) (fn [agt] ((nth breedings i) :value)))))
-                      (apply await pop-agents) ;; SYNCHRONIZE
+                          (reset! (nth pop-atoms i) ((nth breedings i) :value))))
                       (recur (inc generation)))))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

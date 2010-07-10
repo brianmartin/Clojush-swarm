@@ -10,7 +10,7 @@
   (fn [state] (push-item (stack-ref :auxiliary 0 state) :integer state)))
 
 (pushgp {:error-function 
-	 (fn [program]
+	 '(fn [program]
 	   (doall
 	    (for [input (range 10)]
 	      (let [state (run-push program

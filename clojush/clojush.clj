@@ -1436,9 +1436,9 @@ subprogram of parent2."
 
 (defn evaluate-individual
   "Returns the given individual with errors and total-errors, computing them if necessary."
-  [i error-function rand-gen]
-  (binding [thread-local-random-generator rand-gen]
-    (let [p (:program i)
+  [i error-function]
+  (let [error-function (eval error-function)
+          p (:program i)
 	  e (if (seq? (:errors i))
 	      (:errors i)
 	      (error-function p))
@@ -1447,14 +1447,14 @@ subprogram of parent2."
 	       (keep-number-reasonable (reduce + e)))]
       (struct-map individual :program p :errors e :total-error te 
 		  :history (if maintain-histories (cons te (:history i)) (:history i))
-		  :ancestors (:ancestors i)))))
+		  :ancestors (:ancestors i))))
 
 (defsevak breed
-  [agt location rand-gen pop error-function population-size max-points atom-generators 
+  [agt location pop error-function population-size max-points atom-generators 
    mutation-probability  mutation-max-points crossover-probability simplification-probability 
    tournament-size reproduction-simplifications trivial-geography-radius]
-  (binding [thread-local-random-generator rand-gen]
-    (let [n (lrand)]
+  (let [n (lrand)
+        error-function (eval error-function)]
       (cond 
        ;; mutation
        (< n mutation-probability)
@@ -1471,7 +1471,7 @@ subprogram of parent2."
 		      error-function reproduction-simplifications false 1000)
        ;; replication
        true 
-       (select pop tournament-size trivial-geography-radius location)))))
+       (select pop tournament-size trivial-geography-radius location))))
 
 (defmacro print-params
   [params]
@@ -1480,9 +1480,9 @@ subprogram of parent2."
 (defn pushgp
   "The top-level routine of pushgp."
   [params]
-  (let [error-function (get params :error-function (fn [p] '(0))) ;; pgm -> list of errors (1 per case)
+  (let [error-function (get params :error-function '(fn [p] '(0))) ;; pgm -> list of errors (1 per case)
 	error-threshold (get params :error-threshold 0)
-	population-size (get params :population-size 1000)
+	population-size (get params :population-size 10)
 	max-points (get params :max-points 50)
 	atom-generators (get params :atom-generators (concat registered-instructions
 							     (list (fn [] (lrand-int 100))
@@ -1511,12 +1511,10 @@ subprogram of parent2."
 				   (agent (struct-map individual 
 					    :program (random-code max-points atom-generators))))))
 	  child-agents (vec (doall (for [_ (range population-size)] 
-				     (agent (struct-map individual)))))
-	  rand-gens (vec (doall (for [_ (range population-size)]
-				  (java.util.Random.))))]
+				     (agent (struct-map individual)))))]
       (loop [generation 0]
 	(printf "\n\n-----\nProcessing generation: %s\nComputing errors..." generation) (flush)
-	(dorun (map #(send % evaluate-individual error-function %2) pop-agents rand-gens))
+	(dorun (map #(send % evaluate-individual error-function) pop-agents))
 	(apply await pop-agents) ;; SYNCHRONIZE
 	(printf "\nDone computing errors.") (flush)
 	;; report and check for success
@@ -1536,17 +1534,17 @@ subprogram of parent2."
 		      )
 		  (do (printf "\nProducing offspring...") (flush)
 		      (let [pop (vec (doall (map deref pop-agents)))
-                            breedings (vec (doall (for [i (range population-size)] (breed i (nth rand-gens i) pop error-function
+                            breedings (vec (doall (for [i (range population-size)] (println (nth pop i) i pop error-function
                                                                                           population-size max-points atom-generators 
                                                                                           mutation-probability mutation-max-points crossover-probability 
                                                                                           simplification-probability tournament-size reproduction-simplifications 
                                                                                           trivial-geography-radius))))]
+                            
                         (while (not (every? true? (for [k breedings] (k :complete?)))) (do (Thread/sleep 1000) (println "waiting"))) ;; SYNCHRONIZE
                         (printf "\nInstalling next generation...") (flush)
                         (dotimes [i population-size]
-                          (send (nth pop-agents i) (fn [av] (nth breedings i))))
-                        (apply await pop-agents) ;; SYNCHRONIZE
-                        )
+                          (send (nth pop-agents i) (fn [av] (nth breedings i)))))
+                      (apply await pop-agents) ;; SYNCHRONIZE
                       (recur (inc generation)))))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

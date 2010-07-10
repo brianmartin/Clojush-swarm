@@ -1319,11 +1319,24 @@ normal, or :abnormal otherwise."
 ;; Populations are vectors of agents with individuals as their states (along with error and
 ;; history information).
 
+(defn error-function [program]
+	   (doall
+	    (for [input (range 10)]
+	      (let [state (run-push program
+				    (push-item input :auxiliary
+					       (push-item input :integer
+							  (make-push-state))))
+		    top-bool (top-item :boolean state)]
+		(if (not (= top-bool :no-stack-item))
+		  (if (= top-bool (odd? input)) 0 1)
+		  1000)))))
+
+
 (defstruct individual :program :errors :total-error :history :ancestors)
 
 (defn auto-simplify 
   "Auto-simplifies the provided individual."
-  [ind error-function steps print? progress-interval]
+  [ind steps print? progress-interval]
   (when print? (printf "\nAuto-simplifying with starting size: %s" (count-points (:program ind))))
   (loop [step 0 program (:program ind) errors (:errors ind) total-errors (:total-error ind)]
     (when (and print? 
@@ -1359,13 +1372,13 @@ normal, or :abnormal otherwise."
 
 (defn problem-specific-report
   "Customize this for your own problem. It will be called at the end of the generational report."
-  [best population generation error-function report-simplifications]
+  [best population generation report-simplifications]
   :no-problem-specific-report-function-defined)
 
 (defn report 
   "Reports on the specified generation of a pushgp run. Returns the best
   individual of the generation."
-  [population generation error-function report-simplifications]
+  [population generation report-simplifications]
   (printf "\n\n;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;")(flush)
   (printf "\n;; -*- Report at generation %s" generation)(flush)
   (let [sorted (sort-by :total-error < population)
@@ -1373,7 +1386,7 @@ normal, or :abnormal otherwise."
     (printf "\nBest program: %s" (not-lazy (:program best)))(flush)
     (when (> report-simplifications 0)
       (printf "\nPartial simplification (may beat best): %s"
-	      (not-lazy (:program (auto-simplify best error-function report-simplifications false 1000)))))
+	      (not-lazy (:program (auto-simplify best report-simplifications false 1000)))))
     (flush)
     (printf "\nErrors: %s" (not-lazy (:errors best)))(flush)
     (printf "\nTotal: %s" (:total-error best))(flush)
@@ -1388,7 +1401,7 @@ normal, or :abnormal otherwise."
 		      (count population))))(flush)
     (printf "\n;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;\n\n")
     (flush)
-    (problem-specific-report best population generation error-function report-simplifications)
+    (problem-specific-report best population generation report-simplifications)
     best))
 
 (defn select
@@ -1436,9 +1449,8 @@ subprogram of parent2."
 
 (defn evaluate-individual
   "Returns the given individual with errors and total-errors, computing them if necessary."
-  [i error-function]
-  (let [error-function (eval error-function)
-          p (:program i)
+  [i]
+  (let [  p (:program i)
 	  e (if (seq? (:errors i))
 	      (:errors i)
 	      (error-function p))
@@ -1450,11 +1462,10 @@ subprogram of parent2."
 		  :ancestors (:ancestors i))))
 
 (defsevak breed
-  [agt location pop error-function population-size max-points atom-generators 
+  [agt location pop population-size max-points atom-generators 
    mutation-probability  mutation-max-points crossover-probability simplification-probability 
    tournament-size reproduction-simplifications trivial-geography-radius]
-  (let [n (lrand)
-        error-function (eval error-function)]
+  (let [n (lrand)]
       (cond 
        ;; mutation
        (< n mutation-probability)
@@ -1468,7 +1479,7 @@ subprogram of parent2."
        ;; simplification
        (< n (+ mutation-probability crossover-probability simplification-probability))
        (auto-simplify (select pop tournament-size trivial-geography-radius location)
-		      error-function reproduction-simplifications false 1000)
+		       reproduction-simplifications false 1000)
        ;; replication
        true 
        (select pop tournament-size trivial-geography-radius location))))
@@ -1480,13 +1491,12 @@ subprogram of parent2."
 (defn pushgp
   "The top-level routine of pushgp."
   [params]
-  (let [error-function (get params :error-function '(fn [p] '(0))) ;; pgm -> list of errors (1 per case)
-	error-threshold (get params :error-threshold 0)
+  (let [error-threshold (get params :error-threshold 0)
 	population-size (get params :population-size 10)
 	max-points (get params :max-points 50)
 	atom-generators (get params :atom-generators (concat registered-instructions
-							     (list (fn [] (lrand-int 100))
-								   (fn [] (lrand)))))
+							     (list '(fn [] (lrand-int 100))
+								   '(fn [] (lrand)))))
 	max-generations (get params :max-generations 1001)
 	mutation-probability (get params :mutation-probability 0.4)
 	mutation-max-points (get params :mutation-max-points 20)
@@ -1502,7 +1512,7 @@ subprogram of parent2."
     (def global-max-points-in-program max-points)
     (printf "\nStarting PushGP run.\n\n") (flush)
     (print-params 
-     (error-function error-threshold population-size max-points atom-generators max-generations 
+     (error-threshold population-size max-points atom-generators max-generations 
 		     mutation-probability mutation-max-points crossover-probability
 		     simplification-probability tournament-size report-simplifications
 		     final-report-simplifications trivial-geography-radius))
@@ -1514,11 +1524,11 @@ subprogram of parent2."
 				     (agent (struct-map individual)))))]
       (loop [generation 0]
 	(printf "\n\n-----\nProcessing generation: %s\nComputing errors..." generation) (flush)
-	(dorun (map #(send % evaluate-individual error-function) pop-agents))
+	(dorun (map #(send % evaluate-individual) pop-agents))
 	(apply await pop-agents) ;; SYNCHRONIZE
 	(printf "\nDone computing errors.") (flush)
 	;; report and check for success
-	(let [best (report (vec (doall (map deref pop-agents))) generation error-function report-simplifications)]
+	(let [best (report (vec (doall (map deref pop-agents))) generation report-simplifications)]
 	  (if (<= (:total-error best) error-threshold)
 	    (do (printf "\n\nSUCCESS at generation %s\nSuccessful program: %s\nErrors: %s\nTotal error: %s\nHistory: %s\nSize: %s\n\n"
 			generation (not-lazy (:program best)) (not-lazy (:errors best)) (:total-error best) 
@@ -1527,24 +1537,25 @@ subprogram of parent2."
 		  (printf "\nAncestors of solution:\n")
 		  (println (:ancestors best)))
 					;(shutdown-agents)
-		(auto-simplify best error-function final-report-simplifications true 500))
+		(auto-simplify best final-report-simplifications true 500))
 	    (do (if (>= generation max-generations)
 		  (do (printf "\nFAILURE\n")
 					;(shutdown-agents)
 		      )
 		  (do (printf "\nProducing offspring...") (flush)
 		      (let [pop (vec (doall (map deref pop-agents)))
-                            breedings (vec (doall (for [i (range population-size)] (println (nth pop i) i pop error-function
+                            breedings (vec (doall (for [i (range population-size)] (breed (nth pop i) i pop
                                                                                           population-size max-points atom-generators 
                                                                                           mutation-probability mutation-max-points crossover-probability 
                                                                                           simplification-probability tournament-size reproduction-simplifications 
                                                                                           trivial-geography-radius))))]
-                            
                         (while (not (every? true? (for [k breedings] (k :complete?)))) (do (Thread/sleep 1000) (println "waiting"))) ;; SYNCHRONIZE
+                        (println ((nth breedings 1) :value))
                         (printf "\nInstalling next generation...") (flush)
                         (dotimes [i population-size]
-                          (send (nth pop-agents i) (fn [av] (nth breedings i)))))
+                          (send (nth pop-agents i) (fn [agt] ((nth breedings i) :value)))))
                       (apply await pop-agents) ;; SYNCHRONIZE
+                      (println (@(nth pop-agents 1) :program))
                       (recur (inc generation)))))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

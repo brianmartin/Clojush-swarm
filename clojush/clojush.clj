@@ -24,7 +24,7 @@
 	    [clojure.walk :as walk]))
 
 (use 'org.runa.swarmiji.sevak.sevak-core)
-;(use 'org.runa.swarmiji.client.client-core)
+(use 'org.runa.swarmiji.client.client-core)
 
 ;;;;;
 ;; a quick way to reload this file
@@ -1557,10 +1557,9 @@ subprogram of parent2."
                                                                 simplification-probability tournament-size reproduction-simplifications 
                                                                 trivial-geography-radius)
                                                             island-populations))]
-                        (while (not (every? true? (for [k island-computations] (k :complete?)))) (do (Thread/sleep 100) (println "waiting"))) ;; SYNCHRONIZE
+                        (wait-until-completion island-computations 9999999)
                         (printf "\nInstalling next generation...") (flush)
                         (dosync (ref-set population (apply concat (for [k island-computations] (k :value))))))
-                        ;(from-swarm 5000 island-computations (dosync (ref-set population (for [c island-computations] (c :value))))))
                       (recur (inc generation)))))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

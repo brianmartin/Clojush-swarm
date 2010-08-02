@@ -1,5 +1,5 @@
--Move error-function back outside clojush.clj
+-Move error-function back outside clojush.clj - right now the 'odd' example is hardcoded into clojush.clj 
 -Adding instructions via :atom-generators is broken, fix
--Sevak-errors, fix
--Batch breeds to reduce network lag
+-Sevak-errors (but not when run on the local server), fix
 -Remove sevak request output from being printed to stdout
+-Error when num-islands doesn't evenly divide population size, fix

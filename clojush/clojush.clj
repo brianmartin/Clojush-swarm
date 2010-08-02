@@ -24,6 +24,7 @@
 	    [clojure.walk :as walk]))
 
 (use 'org.runa.swarmiji.sevak.sevak-core)
+;(use 'org.runa.swarmiji.client.client-core)
 
 ;;;;;
 ;; a quick way to reload this file
@@ -1461,28 +1462,39 @@ subprogram of parent2."
 		  :history (if maintain-histories (cons te (:history i)) (:history i))
 		  :ancestors (:ancestors i))))
 
-(defsevak breed
-  [agt location pop population-size max-points atom-generators 
+(defn breed-and-eval
+  [agt location population population-size max-points atom-generators 
    mutation-probability  mutation-max-points crossover-probability simplification-probability 
    tournament-size reproduction-simplifications trivial-geography-radius]
-  (let [n (lrand)]
-      (cond 
-       ;; mutation
-       (< n mutation-probability)
-       (mutate (select pop tournament-size trivial-geography-radius location) 
-	       mutation-max-points max-points atom-generators)
-       ;; crossover
-       (< n (+ mutation-probability crossover-probability))
-       (let [first-parent (select pop tournament-size trivial-geography-radius location)
-	     second-parent (select pop tournament-size trivial-geography-radius location)]
-	 (crossover first-parent second-parent max-points))
-       ;; simplification
-       (< n (+ mutation-probability crossover-probability simplification-probability))
-       (auto-simplify (select pop tournament-size trivial-geography-radius location)
-		       reproduction-simplifications false 1000)
-       ;; replication
-       true 
-       (select pop tournament-size trivial-geography-radius location))))
+  (evaluate-individual
+    (let [n (lrand)]
+        (cond 
+         ;; mutation
+         (< n mutation-probability)
+         (mutate (select population tournament-size trivial-geography-radius location) 
+                 mutation-max-points max-points atom-generators)
+         ;; crossover
+         (< n (+ mutation-probability crossover-probability))
+         (let [first-parent (select population tournament-size trivial-geography-radius location)
+               second-parent (select population tournament-size trivial-geography-radius location)]
+           (crossover first-parent second-parent max-points))
+         ;; simplification
+         (< n (+ mutation-probability crossover-probability simplification-probability))
+         (auto-simplify (select population tournament-size trivial-geography-radius location)
+                         reproduction-simplifications false 1000)
+         ;; replication
+         true 
+         (select population tournament-size trivial-geography-radius location)))))
+
+(defsevak island-breed
+  [population island-population-size max-points atom-generators
+   mutation-probability mutation-max-points crossover-probability 
+   simplification-probability tournament-size reproduction-simplifications 
+   trivial-geography-radius]
+  (vec (doall (for [i (range island-population-size)] (breed-and-eval (nth population i) i population island-population-size max-points
+                                                                         atom-generators mutation-probability mutation-max-points crossover-probability 
+                                                                         simplification-probability tournament-size reproduction-simplifications 
+                                                                         trivial-geography-radius)))))
 
 (defmacro print-params
   [params]
@@ -1492,7 +1504,7 @@ subprogram of parent2."
   "The top-level routine of pushgp."
   [params]
   (let [error-threshold (get params :error-threshold 0)
-	population-size (get params :population-size 10)
+	population-size (get params :population-size 1000)
 	max-points (get params :max-points 50)
 	atom-generators (get params :atom-generators (concat registered-instructions
 							     (list '(fn [] (lrand-int 100))
@@ -1506,7 +1518,8 @@ subprogram of parent2."
 	report-simplifications (get params :report-simplifications 100)
 	final-report-simplifications (get params :final-report-simplifications 1000)
 	reproduction-simplifications (get params :reproduction-simplifications 1)
-	trivial-geography-radius (get params :trivial-geography-radius 0)]
+	trivial-geography-radius (get params :trivial-geography-radius 0)
+        num-islands 2]
     ;; set globals from parameters
     (def global-atom-generators atom-generators)
     (def global-max-points-in-program max-points)
@@ -1516,16 +1529,15 @@ subprogram of parent2."
 		     mutation-probability mutation-max-points crossover-probability
 		     simplification-probability tournament-size report-simplifications
 		     final-report-simplifications trivial-geography-radius))
-    (printf "\nGenerating initial population...\n") (flush)
-    (let [pop-atoms (vec (doall (for [_ (range population-size)] 
-				   (atom (struct-map individual 
-					    :program (random-code max-points atom-generators))))))]
+    (printf "\nGenerating initial population and computing errors...\n") (flush)
+    (let [population (ref (doall (map evaluate-individual
+                                      (vec (doall (for [_ (range population-size)] 
+                                                     (struct-map individual 
+                                                        :program (random-code max-points atom-generators))))))))]
       (loop [generation 0]
-	(printf "\n\n-----\nProcessing generation: %s\nComputing errors..." generation) (flush)
-	(dorun (map #(swap! % evaluate-individual) pop-atoms))
-	(printf "\nDone computing errors.") (flush)
+	(printf "\n\n-----\nProcessing generation: %s" generation) (flush)
 	;; report and check for success
-	(let [best (report (vec (doall (map deref pop-atoms))) generation report-simplifications)]
+	(let [best (report (vec @population) generation report-simplifications)]
 	  (if (<= (:total-error best) error-threshold)
 	    (do (printf "\n\nSUCCESS at generation %s\nSuccessful program: %s\nErrors: %s\nTotal error: %s\nHistory: %s\nSize: %s\n\n"
 			generation (not-lazy (:program best)) (not-lazy (:errors best)) (:total-error best) 
@@ -1537,16 +1549,18 @@ subprogram of parent2."
 	    (do (if (>= generation max-generations)
 		  (do (printf "\nFAILURE\n"))
 		  (do (printf "\nProducing offspring...") (flush)
-		      (let [pop (vec (doall (map deref pop-atoms)))
-                            breedings (vec (doall (for [i (range population-size)] (breed (nth pop i) i pop
-                                                                                          population-size max-points atom-generators 
-                                                                                          mutation-probability mutation-max-points crossover-probability 
-                                                                                          simplification-probability tournament-size reproduction-simplifications 
-                                                                                          trivial-geography-radius))))]
-                        (while (not (every? true? (for [k breedings] (k :complete?)))) (do (Thread/sleep 50) (println "waiting"))) ;; SYNCHRONIZE
+		      (let [island-populations (partition (/ population-size num-islands) @population)
+                            island-population-size (/ population-size num-islands)
+                            island-computations (doall (map #(island-breed %
+                                                                island-population-size max-points atom-generators 
+                                                                mutation-probability mutation-max-points crossover-probability 
+                                                                simplification-probability tournament-size reproduction-simplifications 
+                                                                trivial-geography-radius)
+                                                            island-populations))]
+                        (while (not (every? true? (for [k island-computations] (k :complete?)))) (do (Thread/sleep 100) (println "waiting"))) ;; SYNCHRONIZE
                         (printf "\nInstalling next generation...") (flush)
-                        (dotimes [i population-size]
-                          (reset! (nth pop-atoms i) ((nth breedings i) :value))))
+                        (dosync (ref-set population (apply concat (for [k island-computations] (k :value))))))
+                        ;(from-swarm 5000 island-computations (dosync (ref-set population (for [c island-computations] (c :value))))))
                       (recur (inc generation)))))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

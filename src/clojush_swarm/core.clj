@@ -2,5 +2,4 @@
   (:gen-class))
 
 (defn -main [& args]
-  (use 'clojush-swarm.clojush)
-  (println args))
+  (use 'clojush-swarm.examples.odd))

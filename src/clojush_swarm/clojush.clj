@@ -21,10 +21,9 @@
   (:require [clojure.zip :as zip] 
 	    [clojure.contrib.math :as math]
 	    [clojure.contrib.seq-utils :as seq-utils]
-	    [clojure.walk :as walk]))
-
-(use 'org.runa.swarmiji.sevak.sevak-core)
-(use 'org.runa.swarmiji.client.client-core)
+	    [clojure.walk :as walk]
+            [org.runa.swarmiji.sevak.sevak-core :as sevak]
+            [org.runa.swarmiji.client.client-core :as client]))
 
 ;;;;;
 ;; a quick way to reload this file
@@ -1486,7 +1485,7 @@ subprogram of parent2."
          true 
          (select population tournament-size trivial-geography-radius location)))))
 
-(defsevak island-breed
+(sevak/defsevak island-breed
   [population island-population-size max-points atom-generators
    mutation-probability mutation-max-points crossover-probability 
    simplification-probability tournament-size reproduction-simplifications 
@@ -1557,7 +1556,7 @@ subprogram of parent2."
                                                                 simplification-probability tournament-size reproduction-simplifications 
                                                                 trivial-geography-radius)
                                                             island-populations))]
-                        (wait-until-completion island-computations 9999999)
+                        (client/wait-until-completion island-computations 9999999)
                         (printf "\nInstalling next generation...") (flush)
                         (dosync (ref-set population (apply concat (for [k island-computations] (k :value))))))
                       (recur (inc generation)))))))))))
@@ -1588,4 +1587,4 @@ of nil values in execute-instruction, do see if any instructions are introducing
 
 ;(stress-test 10000)
 
-(boot-sevak-server)
+(sevak/boot-sevak-server)

@@ -1,5 +1,5 @@
-(load "clojush")
-(in-ns 'clojush)
+(ns clojush-swarm.examples.odd
+  (:use clojush-swarm.clojush))
 
 ;;;;;;;;;;;;
 ;; The "odd" problem: take a positive integer input and push a Boolean indicating

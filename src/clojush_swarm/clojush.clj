@@ -16,16 +16,6 @@
 ;; for more details.
 
 ;;;;;
-;; swarmiji logs configuration
-
-(in-ns 'org.rathore.amit.utils.config)
-(def *clj-utils-config*
-  {:log-to-console true
-   :logs-dir "/home/brian/src/swarm/clojush-swarm/logs"
-   :log-filename-prefix "clojush"
-   :exception-notifier {:enabled false}})
-
-;;;;;
 ;; namespace declaration and access to needed libraries
 (ns clojush-swarm.clojush
   (:require [clojure.zip :as zip] 
@@ -1228,13 +1218,7 @@ the code stack."
 	  state))
       state)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; print all registered instructions on loading
-
-(printf "\nRegistered instructions: %s\n\n" registered-instructions)
-(flush)
-
-;; also set default value for atom-generators
+;; set default value for atom-generators
 (def global-atom-generators (concat registered-instructions
 				    (list (fn [] (lrand-int 100))
 					  (fn [] (lrand)))))
@@ -1487,6 +1471,8 @@ subprogram of parent2."
 (defn pushgp
   "The top-level routine of pushgp."
   [params]
+  (printf "\nRegistered instructions: %s\n\n" registered-instructions)
+  (flush)
   (let [error-threshold (get params :error-threshold 0)
 	population-size (get params :population-size 1000)
 	max-points (get params :max-points 50)
@@ -1547,7 +1533,7 @@ subprogram of parent2."
                       (recur (inc generation)))))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; boot server
+;; necessary functions for swarmiji
 
 (defn boot-server [] (sevak/boot-sevak-server))
 

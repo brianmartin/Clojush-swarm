@@ -1,7 +1,3 @@
-;(ns clojush-swarm.examples.odd
-;  (:use clojush-swarm.clojush))
-;(in-ns 'clojush-swarm.clojush)
-
 ;;;;;;;;;;;;
 ;; The "odd" problem: take a positive integer input and push a Boolean indicating
 ;; whether or not the input is an odd number. There are many ways to compute this

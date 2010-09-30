@@ -1,5 +1,5 @@
 (def operation-configs {
-    "development" {
+    "test" {
       :swarmiji-username "brian"
       :host "127.0.0.1"
       :port 61613
@@ -23,4 +23,3 @@
       }
    }
 )
-

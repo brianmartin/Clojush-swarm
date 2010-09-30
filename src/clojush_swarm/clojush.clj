@@ -16,6 +16,16 @@
 ;; for more details.
 
 ;;;;;
+;; swarmiji logs configuration
+
+(in-ns 'org.rathore.amit.utils.config)
+(def *clj-utils-config*
+  {:log-to-console true
+   :logs-dir "/home/brian/src/swarm/clojush-swarm/logs"
+   :log-filename-prefix "clojush"
+   :exception-notifier {:enabled false}})
+
+;;;;;
 ;; namespace declaration and access to needed libraries
 (ns clojush-swarm.clojush
   (:require [clojure.zip :as zip] 
@@ -24,22 +34,6 @@
 	    [clojure.walk :as walk]
             [org.runa.swarmiji.sevak.sevak-core :as sevak]
             [org.runa.swarmiji.client.client-core :as client]))
-
-;;;;;
-;; a quick way to reload this file
-(defn lc [] (load "clojush") 'clojush)
-
-;;;;;
-;; reload this and then the tests
-(defn lt []
-  (load "clojush")
-  (load "clojush-tests")
-  'clojush-tests)
-
-;;;;;
-;; backtrace abbreviation, to ease debugging
-(defn bt []
-  (.printStackTrace *e))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; globals
@@ -1312,25 +1306,16 @@ normal, or :abnormal otherwise."
 	     (pop-item :code s)
 	     s))))))
 
+(defn error-function
+  "Dummy error-function to be replaced."
+  [program] 1)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; pushgp
 
 ;; Individuals are structure maps.
 ;; Populations are vectors of agents with individuals as their states (along with error and
 ;; history information).
-
-(defn error-function [program]
-	   (doall
-	    (for [input (range 10)]
-	      (let [state (run-push program
-				    (push-item input :auxiliary
-					       (push-item input :integer
-							  (make-push-state))))
-		    top-bool (top-item :boolean state)]
-		(if (not (= top-bool :no-stack-item))
-		  (if (= top-bool (odd? input)) 0 1)
-		  1000)))))
-
 
 (defstruct individual :program :errors :total-error :history :ancestors)
 
@@ -1586,5 +1571,3 @@ of nil values in execute-instruction, do see if any instructions are introducing
 	    (println p)))))))
 
 ;(stress-test 10000)
-
-(sevak/boot-sevak-server)

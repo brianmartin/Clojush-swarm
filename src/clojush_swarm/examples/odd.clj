@@ -1,10 +1,11 @@
+;(ns clojush-swarm.examples.odd
+;  (:use clojush-swarm.clojush))
+;(in-ns 'clojush-swarm.clojush)
+
 ;;;;;;;;;;;;
 ;; The "odd" problem: take a positive integer input and push a Boolean indicating
 ;; whether or not the input is an odd number. There are many ways to compute this
 ;; and PushGP sometimes finds unusual methods.
-(ns clojush-swarm.examples.odd
-  (:use clojush-swarm.clojush))
-(in-ns 'clojush-swarm.clojush)
 
 (defn error-function [program]
 	   (doall
@@ -21,6 +22,3 @@
 (define-registered in 
   (fn [state] (push-item (stack-ref :auxiliary 0 state) :integer state)))
 
-(println "SSSSSSTAAARTING")
-(sevak/boot-sevak-server)
-(pushgp {:atom-generators registered-instructions})

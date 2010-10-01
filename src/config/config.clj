@@ -9,7 +9,7 @@
       :sevak-diagnostics-queue-prefix "clojush_diagnostics_"    
       :distributed-mode true
       :diagnostics-mode false
-      :logsdir (str swarmiji-home "/logs")
+      :logsdir (str swarmiji-home "logs")
       :log-to-console true }
 })
 

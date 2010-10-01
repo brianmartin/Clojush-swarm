@@ -7,7 +7,6 @@
 (import '(java.io FileWriter FileReader))
 (import '(org.apache.commons.io FileUtils))
 
-
 (defn -main [& args]
   (with-command-line args "Distributed Clojush!" 
    [[file f "Problem to run.  Should include an error-function." "/home/brian/src/swarm/clojush-swarm/src/clojush_swarm/examples/odd.clj"]
@@ -36,4 +35,6 @@
                 (.write bw (str content "\n")))))))
     (c/boot-server)
     (if (not server?)
-      (c/pushgp {:atom-generators c/registered-instructions})))))
+      (do 
+        (c/pushgp {:atom-generators c/registered-instructions})
+        (System/exit 0))))))

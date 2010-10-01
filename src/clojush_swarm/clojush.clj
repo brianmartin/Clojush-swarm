@@ -80,7 +80,7 @@ The order of the numbers is not random (you may want to shuffle it)."
       (cons this-part (decompose (- number this-part)
 				 (dec max-parts))))))
 
-(defn shuffle
+(defn shuffle-list
   [lst]
   (if (empty? (rest lst))
     lst
@@ -88,7 +88,7 @@ The order of the numbers is not random (you may want to shuffle it)."
 	  item (nth lst index)
 	  remainder (concat (subvec (into [] lst) 0 index)
 			    (subvec (into [] lst) (inc index)))]
-      (cons item (shuffle remainder)))))
+      (cons item (shuffle-list remainder)))))
 
 (defn random-element
   [lst]
@@ -103,7 +103,7 @@ The order of the numbers is not random (you may want to shuffle it)."
 	(element)
 	element))
     (let [elements-this-level 
-	  (shuffle (decompose (dec points) (dec points)))]
+	  (shuffle-list (decompose (dec points) (dec points)))]
       (doall (map (fn [size] (random-code-with-size size atom-generators))
 		  elements-this-level)))))
 
@@ -1459,10 +1459,11 @@ subprogram of parent2."
    mutation-probability mutation-max-points crossover-probability 
    simplification-probability tournament-size reproduction-simplifications 
    trivial-geography-radius]
-  (vec (doall (for [i (range island-population-size)] (breed-and-eval (nth population i) i population island-population-size max-points
-                                                                         atom-generators mutation-probability mutation-max-points crossover-probability 
-                                                                         simplification-probability tournament-size reproduction-simplifications 
-                                                                         trivial-geography-radius)))))
+  (vec (doall (for [i (range island-population-size)] 
+                (breed-and-eval (nth population i) i population island-population-size max-points
+                   atom-generators mutation-probability mutation-max-points crossover-probability 
+                   simplification-probability tournament-size reproduction-simplifications 
+                   trivial-geography-radius)))))
 
 (defmacro print-params
   [params]

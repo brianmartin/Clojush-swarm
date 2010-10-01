@@ -10,6 +10,8 @@
 (defn -main [& args]
   (with-command-line args "Distributed Clojush!" 
    [[file f "Problem to run.  Should include an error-function." "/home/brian/src/swarm/clojush-swarm/src/clojush_swarm/examples/odd.clj"]
+    [num-nodes n "Number of nodes being used (used to divide population)." 2]
+    [wait-time w "Time to wait on a node before rerunning a generation (in ms)." 10000]
     [server? s? "Run as a server (available to compute client tasks)."]
     [verbose? v? "Prints all calls to sevaks (with full args)"]
     [logs-dir l "Directory where logs should go." "/home/brian/src/swarm/clojush-swarm/src/logs"]
@@ -36,5 +38,7 @@
     (c/boot-server)
     (if (not server?)
       (do 
-        (c/pushgp {:atom-generators c/registered-instructions})
+        (c/pushgp {:atom-generators c/registered-instructions
+                   :wait-time wait-time
+                   :num-nodes num-nodes})
         (System/exit 0))))))

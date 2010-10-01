@@ -1459,11 +1459,13 @@ subprogram of parent2."
    mutation-probability mutation-max-points crossover-probability 
    simplification-probability tournament-size reproduction-simplifications 
    trivial-geography-radius]
-  (vec (doall (for [i (range island-population-size)] 
-                (breed-and-eval (nth population i) i population island-population-size max-points
+  (vec (pmap #(breed-and-eval % %2
+                   population island-population-size max-points
                    atom-generators mutation-probability mutation-max-points crossover-probability 
                    simplification-probability tournament-size reproduction-simplifications 
-                   trivial-geography-radius)))))
+                   trivial-geography-radius)
+             population
+             (range island-population-size))))
 
 (defmacro print-params
   [params]
@@ -1490,7 +1492,7 @@ subprogram of parent2."
 	final-report-simplifications (get params :final-report-simplifications 1000)
 	reproduction-simplifications (get params :reproduction-simplifications 1)
 	trivial-geography-radius (get params :trivial-geography-radius 0)
-        num-islands 2]
+        num-islands 4]
     ;; set globals from parameters
     (def global-atom-generators atom-generators)
     (def global-max-points-in-program max-points)
@@ -1528,7 +1530,7 @@ subprogram of parent2."
                                                                 simplification-probability tournament-size reproduction-simplifications 
                                                                 trivial-geography-radius)
                                                             island-populations))]
-                        (client/wait-until-completion island-computations 9999999)
+                        (client/wait-until-completion island-computations 10000)
                         (printf "\nInstalling next generation...") (flush)
                         (dosync (ref-set population (apply concat (for [k island-computations] (k :value))))))
                       (recur (inc generation)))))))))))

@@ -1492,7 +1492,7 @@ subprogram of parent2."
 	final-report-simplifications (get params :final-report-simplifications 1000)
 	reproduction-simplifications (get params :reproduction-simplifications 1)
 	trivial-geography-radius (get params :trivial-geography-radius 0)
-        num-islands (get params (:num-nodes 4))
+        num-islands (get params :num-nodes 4)
         wait-time (get params :wait-time 10000)]
     ;; set globals from parameters
     (def global-atom-generators atom-generators)

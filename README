@@ -16,8 +16,7 @@ REQUIREMENTS
 
 QUICKSTART
 
-Update fields relevant to rabbitmq in swarmiji/config/config.clj.
-
-To boot a server: ./clojush-swarm clojush/clojush.clj
-To boot a server and perform a run: ./clojush-swarm clojush/examples/odd.clj
+$ lein deps
+$ lein uberjar
+$ java -jar clojush-swarm.jar --help
 
